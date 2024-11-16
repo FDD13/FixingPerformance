@@ -1,10 +1,11 @@
 import random
-from datacenter.models import Mark, Schoolkid, Subject, Teacher, Commendation, Chastisement
+from datacenter.models import Mark, Schoolkid, Subject, Teacher, Commendation, Chastisement, Lesson
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 
 
 def fix_marks(schoolkid):
     low_marks = Mark.objects.filter(schoolkid=schoolkid, points__lt=4).update(points = "5")
-
 
 
 
@@ -15,28 +16,22 @@ def remove_chastisements(schoolkid):
 
 
 def create_commendation(schoolkid, subject):
-
-    special_kid_teacher = Teacher.objects.filter(full_name__contains="Селезнева Майя Макаровна").get()
+    try:
+        special_kid = Schoolkid.objects.get(full_name__contains=f"{schoolkid}")
+        special_subject = Subject.objects.filter(title__contains=f"{subject}", year_of_study=special_kid.year_of_study)
+    except ObjectDoesNotExist:
+        raise Http404(f"ученик по имени '{schoolkid}' и предмет '{subject}' не найден.")
+    lesson = Lesson.objects.filter(subject=special_subject.first(), year_of_study=f"{special_kid.year_of_study}", group_letter=f"{special_kid.group_letter}").latest('date')
+    lesson_time = lesson.date
     commendations = ["Молодец!", "Отлично!", "Хорошо!", "Гораздо лучше, чем я ожидал!", "Ты меня приятно удивил!", "Великолепно!", "Прекрасно!", "Ты меня очень обрадовал!", "Именно этого я давно ждал от тебя!", "Сказано здорово – просто и ясно!", "Замечательно!"]
-    special_kid_commendation = Commendation.objects.create(text=random.choice(commendations), created="2018-02-10", schoolkid=schoolkid,
-                                                           subject=subject, teacher=special_kid_teacher)
-
-
-
-def main():
-
-    special_kid = Schoolkid.objects.filter(full_name__contains="Фролов Иван Григорьевич").get()
-    special_kid_subject = Subject.objects.filter(title__contains="Музыка", year_of_study=6).get()
-
-    fixed_marks = fix_marks(special_kid)
-    special_kid_commendation = create_commendation(special_kid, special_kid_subject)
-    deleted_chastisements = remove_chastisements(special_kid)
+    special_kid_commendation = Commendation.objects.create(text=random.choice(commendations), created=lesson_time, schoolkid=special_kid,
+                                                           subject=special_subject.first(), teacher=lesson.teacher)
 
 
 
 
-if __name__ == '__main__':
-    main()
+
+
 
 
 
