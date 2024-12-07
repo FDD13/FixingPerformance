@@ -18,13 +18,16 @@ def remove_chastisements(schoolkid):
 
 
 
+
 def create_commendation(schoolkid, subject):
     special_schoolkid = find_schoolkid(schoolkid)
     schoolkid_subject = find_subject(special_schoolkid.full_name, subject)
     lesson = Lesson.objects.filter(subject=schoolkid_subject, year_of_study=schoolkid_subject.year_of_study, group_letter=special_schoolkid.group_letter).latest('date')
-    lesson_time = lesson.date
     commendations = ["Молодец!", "Отлично!", "Хорошо!", "Гораздо лучше, чем я ожидал!", "Ты меня приятно удивил!", "Великолепно!", "Прекрасно!", "Ты меня очень обрадовал!", "Именно этого я давно ждал от тебя!", "Сказано здорово – просто и ясно!", "Замечательно!"]
-    special_kid_commendation = Commendation.objects.create(text=random.choice(commendations), created=lesson_time, schoolkid=special_schoolkid,
+    if lesson is None:
+        raise ValueError("Урок не найден. Проверьте расписание")
+    else:
+        special_kid_commendation = Commendation.objects.create(text=random.choice(commendations), created=lesson.date, schoolkid=special_schoolkid,
                                                            subject=schoolkid_subject, teacher=lesson.teacher)
 
 
